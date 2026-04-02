@@ -117,7 +117,7 @@ begin
     - show_margins : if true, annotate GM / PM
     - P_open    : number of open-loop RHP poles (for Nyquist criterion caption)
     """
-    function section_plot(G, G_label, ω_arr, ω_idx, neg_real_pts; show_margins=true, P_open=0)
+    function section_plot(G, G_label, ω_arr, ω_idx, neg_real_pts; show_margins=true, P_open=0, ylimits=nothing, xlimits=nothing)
         mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph =
             freq_data(G, ω_arr)
 
@@ -217,7 +217,8 @@ begin
             color     = :steelblue,
             label     = "ω > 0",
             title     = "Nyquist Polar — $(G_label)\n(r = |G(jω)|, θ = ∠G(jω))",
-            legend    = :outertop
+            legend    = :outertop,
+			ylims=ylimits
         )
         # Mirror image for ω < 0
         plot!(p_nyq,
@@ -363,7 +364,7 @@ begin
     g1_neg_real = []   # no negative real-axis crossings for ω > 0
 
     section_plot(G1, "G₁(s) = 1/((s+1)(s+2))", ω_range, ω_idx1,
-                 g1_neg_real; show_margins=true, P_open=0)
+                 g1_neg_real; show_margins=true, P_open=0, xlimits=(-pi/2,pi/2), ylimits=(0,0.6))
 end
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -452,7 +453,7 @@ begin
     ]
 
     section_plot(G2, "G₂(s) = 1/((s−1)(s²+2s+3))", ω_range, ω_idx2,
-                 g2_neg_real; show_margins=true, P_open=1)
+                 g2_neg_real; show_margins=true, P_open=1, ylimits=(0,0.4))
 end
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -542,7 +543,7 @@ begin
     ]
 
     section_plot(G3, "G₃(s) = (s−1)/((s+2)(s²−s+1))", ω_range, ω_idx3,
-                 g3_neg_real; show_margins=true, P_open=2)
+                 g3_neg_real; show_margins=true, P_open=2, ylimits=(0,0.7))
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
