@@ -12,9 +12,17 @@ Interactive Pluto notebook demonstrating how **Bode magnitude/phase data maps di
 
 - File: `nyquist_examples.jl`
 - Examples covered:
-  - Section 1: \(G_1(s)=1/((s+1)(s+2))\)
-  - Section 2: \(G_2(s)=1/((s-1)(s^2+2s+3))\)
-  - Section 3: \(G_3(s)=(s-1)/((s+2)(s^2-s+1))\)
+  - Section 1: Transfer function
+    
+     $$G_1(s)=\dfrac{1}{(s+1)(s+2)}$$
+    
+  - Section 2: Transfer function
+    
+     $$G_2(s)=\dfrac{1}{(s-1)(s^2+2s+3)}$$
+    
+  - Section 3: Transfer function
+    
+     $$G_3(s)=\dfrac{s-1}{(s+2)(s^2-s+1)}$$
 
 Each section includes:
 
@@ -22,6 +30,10 @@ Each section includes:
 - Polar zoom controls:
   - `rmax` for radial viewport.
   - `θzoom` for angular window (`[-θzoom, +θzoom]` degrees).
+
+<p align="center">
+  <img src="https://itabrah2.web.engr.illinois.edu/GIFs/nyquist-ex1.gif" />
+</p>
 
 ## Run locally
 
