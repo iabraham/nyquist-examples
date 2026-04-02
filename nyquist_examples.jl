@@ -44,13 +44,22 @@ begin
     polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
     eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
 
+    function unwrap_phase(phase::Vector{Float64})
+        unwrapped = copy(phase)
+        for i in 2:length(unwrapped)
+            diff = unwrapped[i] - unwrapped[i-1]
+            unwrapped[i] = unwrapped[i-1] + (mod(diff + π, 2π) - π)
+        end
+        return unwrapped
+    end
+
     const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400)
 
     function freq_data(G::RationalTF, ω_arr)
         h = eval_tf.(Ref(G), im .* ω_arr)
         mag = abs.(h)
         phase_rad = angle.(h)
-        phase_deg = rad2deg.(phase_rad)
+        phase_deg = rad2deg.(unwrap_phase(phase_rad))
 
         p_cross_ω = Float64[]
         p_cross_mag = Float64[]
