@@ -43,13 +43,29 @@ begin
 
     polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
     eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
+    wrap_angle(θ) = mod(θ + π, 2π) - π
+
+    function unwrap_phase(phase_rad::AbstractVector{<:Real})
+        out = Float64[phase_rad[1]]
+        offset = 0.0
+        for i in 2:length(phase_rad)
+            δ = phase_rad[i] - phase_rad[i-1]
+            if δ > π
+                offset -= 2π
+            elseif δ < -π
+                offset += 2π
+            end
+            push!(out, phase_rad[i] + offset)
+        end
+        out
+    end
 
     const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400)
 
     function freq_data(G::RationalTF, ω_arr)
         h = eval_tf.(Ref(G), im .* ω_arr)
         mag = abs.(h)
-        phase_rad = angle.(h)
+        phase_rad = unwrap_phase(angle.(h))
         phase_deg = rad2deg.(phase_rad)
 
         p_cross_ω = Float64[]
@@ -149,8 +165,8 @@ begin
         for mpc in p_cross_mag
             scatter!(pax, [π], [mpc], color=:crimson, marker=:xcross, markersize=12)
         end
-        scatter!(pax, [ph_rad_c], [mag_c], color=:green, markersize=12)
-        scatter!(pax, [-ph_rad_c], [mag_c], color=:limegreen, markersize=9)
+        scatter!(pax, [wrap_angle(ph_rad_c)], [mag_c], color=:green, markersize=12)
+        scatter!(pax, [wrap_angle(-ph_rad_c)], [mag_c], color=:limegreen, markersize=9)
 
         fig
     end
@@ -158,40 +174,40 @@ end
 
 # ╔═╡ 56f5984f-c0d6-4dd2-83c8-a77f877d4444
 md"""
-## Section 1 — \(G_1(s)=\frac{1}{(s+1)(s+2)}\), stable for \(K>-2\)
+## Section 1 — $G_1(s)=\frac{1}{(s+1)(s+2)}$, stable for $K>-2$
 """
 
 # ╔═╡ 71f042f8-f79e-4707-9275-01f1ba7f5555
 G1 = RationalTF([1.0], [1.0, 3.0, 2.0])
 
 # ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
-@bind ω_idx1 Slider(1:length(ω_range), default=280, show_value=true)
+@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=true)
 
 # ╔═╡ d16fbe37-efb8-4c26-9b65-378f59487777
-@bind rmax1 Slider(0.2:0.01:1.2, default=0.6, show_value=true)
+@bind rmax1 PlutoUI.Slider(0.2:0.01:1.2, default=0.6, show_value=true)
 
 # ╔═╡ e65be8ba-5723-4efb-8ec8-fca719f28888
-@bind θzoom1 Slider(40:5:220, default=140, show_value=true)
+@bind θzoom1 PlutoUI.Slider(40:5:220, default=140, show_value=true)
 
 # ╔═╡ 98abf2c4-17ef-428e-b4f6-53347e349999
 section_figure(G1, "G₁(s)", ω_idx1; neg_real_pts=[], rmax=rmax1, θmin_deg=-θzoom1, θmax_deg=θzoom1)
 
 # ╔═╡ e2be7a3b-a73d-4d8c-9d6a-8d4f5770aaaa
 md"""
-## Section 2 — \(G_2(s)=\frac{1}{(s-1)(s^2+2s+3)}\), stable for \(3<K<4\)
+## Section 2 — $G_2(s)=\frac{1}{(s-1)(s^2+2s+3)}$, stable for $3<K<4$
 """
 
 # ╔═╡ c9f7b88d-2b63-4f9f-8664-56374790bbbb
 G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
 
 # ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
-@bind ω_idx2 Slider(1:length(ω_range), default=390, show_value=true)
+@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=true)
 
 # ╔═╡ 6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
-@bind rmax2 Slider(0.2:0.01:0.8, default=0.45, show_value=true)
+@bind rmax2 PlutoUI.Slider(0.2:0.01:0.8, default=0.45, show_value=true)
 
 # ╔═╡ 875ce4c8-9f57-4f2f-8f8d-e47a99c8eeee
-@bind θzoom2 Slider(40:5:220, default=120, show_value=true)
+@bind θzoom2 PlutoUI.Slider(40:5:220, default=120, show_value=true)
 
 # ╔═╡ 9ffd6c95-d6a7-4f6a-9f32-88e58d39ffff
 section_figure(G2, "G₂(s)", ω_idx2;
@@ -200,20 +216,20 @@ section_figure(G2, "G₂(s)", ω_idx2;
 
 # ╔═╡ 14dbde3f-3fc9-40e7-8d75-f66cbf620001
 md"""
-## Section 3 — \(G_3(s)=\frac{s-1}{(s+2)(s^2-s+1)}\), stable for \(\frac{3}{2}<K<2\)
+## Section 3 — $G_3(s)=\frac{s-1}{(s+2)(s^2-s+1)}$, stable for $\frac{3}{2}<K<2$
 """
 
 # ╔═╡ a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
 G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
 
 # ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
-@bind ω_idx3 Slider(1:length(ω_range), default=300, show_value=true)
+@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=true)
 
 # ╔═╡ 1a768a4e-f2c7-4ec6-8a39-37e86b610004
-@bind rmax3 Slider(0.2:0.01:1.0, default=0.72, show_value=true)
+@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, show_value=true)
 
 # ╔═╡ ef48c0f6-49b9-46cb-ac53-12fcfd520005
-@bind θzoom3 Slider(40:5:220, default=130, show_value=true)
+@bind θzoom3 PlutoUI.Slider(40:5:220, default=130, show_value=true)
 
 # ╔═╡ 0c0805e3-62a5-4858-bab3-69a248090006
 section_figure(G3, "G₃(s)", ω_idx3;
