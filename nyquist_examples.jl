@@ -95,10 +95,12 @@ begin
 
         fig = Figure(size=(1200, 680))
 
-        ax_mag = Axis(fig[1, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Magnitude (dB)", title="Bode Magnitude — $label")
+        mag_dB_c = 20log10(max(mag_c, 1e-12))
+        ax_mag = Axis(fig[1, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Magnitude (dB)",
+            title="Bode Magnitude — $label\n|G(jω)| = $(round(mag_dB_c, digits=2)) dB  at  ω = $(round(ω_c, sigdigits=4)) rad/s")
         lines!(ax_mag, ω_range, mag_dB, color=:steelblue, linewidth=2)
         hlines!(ax_mag, [0.0], color=:black, linestyle=:dash)
-        scatter!(ax_mag, [ω_c], [20log10(max(mag_c, 1e-12))], color=:green, markersize=12)
+        scatter!(ax_mag, [ω_c], [mag_dB_c], color=:green, markersize=12)
         for ωpc in p_cross_ω
             vlines!(ax_mag, [ωpc], color=:crimson, linestyle=:dot)
         end
@@ -106,7 +108,8 @@ begin
             vlines!(ax_mag, [ωgc], color=:darkorange, linestyle=:dot)
         end
 
-        ax_phase = Axis(fig[2, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Phase (deg)", title="Bode Phase — $label")
+        ax_phase = Axis(fig[2, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Phase (deg)",
+            title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s")
         lines!(ax_phase, ω_range, phase_deg, color=:steelblue, linewidth=2)
         hlines!(ax_phase, [-180.0], color=:crimson, linestyle=:dash)
         hlines!(ax_phase, [0.0], color=:black, linestyle=:dot)
