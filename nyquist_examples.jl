@@ -151,7 +151,7 @@ G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
     end
 
 # ╔═╡ 141140a6-48f9-422d-8e68-dd781ea634a0
-function phase_plot(fig, label, ω_idx, fdata)
+function phase_plot(fig, label, ω_idx, fdata, ul, ll)
 	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
 	ω_c = ω_range[ω_idx]
 	ph_c = phase_deg[ω_idx]
@@ -159,8 +159,8 @@ function phase_plot(fig, label, ω_idx, fdata)
 					ylabel="Phase (deg)", title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s",
 					titlesize=20)
 	lines!(ax_phase, ω_range, phase_deg, color=:steelblue, linewidth=2)
-	hlines!(ax_phase, [-180.0], color=:crimson, linestyle=:dash)
-	hlines!(ax_phase, [0.0], color=:black, linestyle=:dot)
+	hlines!(ax_phase, [ll], color=:crimson, linestyle=:dash)
+	hlines!(ax_phase, [ul], color=:black, linestyle=:dot)
 	scatter!(ax_phase, [ω_c], [ph_c], color=:green, markersize=12)
 	for (ωgc, phgc) in zip(g_cross_ω, g_cross_ph)
 		scatter!(ax_phase, [ωgc], [phgc], color=:darkorange, 
@@ -221,28 +221,28 @@ end
 
 # ╔═╡ 82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
 function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], 
-						rmax=1.0, θmin_deg=-210, θmax_deg=210)
+						rmax=1.0, θmin_deg=-210, θmax_deg=210, pul=0, pll=-180)
 	fdata = freq_data(G, ω_range)
 	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
 	fig = Figure(size=(1200, 680))	
     ax_mag = mag_plot(fig, label, ω_idx, fdata)
-	ax_phase = phase_plot(fig, label, ω_idx, fdata)
+	ax_phase = phase_plot(fig, label, ω_idx, fdata, pul, pll)
 	pax = polar_plot(fig, label, ω_idx, fdata,neg_real_pts,rmax, θmin_deg, θmax_deg)
 	fig
 end
 
 # ╔═╡ 98abf2c4-17ef-428e-b4f6-53347e349999
-section_figure(G1, "G₁(s)", ω_idx1; neg_real_pts=[], rmax=rmax1, θmin_deg=-θzoom1, θmax_deg=θzoom1)
+section_figure(G1, "G₁(s)", ω_idx1; neg_real_pts=[], rmax=rmax1, θmin_deg=-θzoom1, θmax_deg=θzoom1, pll=-180, pul=0)
 
 # ╔═╡ 9ffd6c95-d6a7-4f6a-9f32-88e58d39ffff
 section_figure(G2, "G₂(s)", ω_idx2;
     neg_real_pts=[(0.0, 1/3, "K=3"), (1.0, 1/4, "K=4")],
-    rmax=rmax2, θmin_deg=-θzoom2, θmax_deg=θzoom2)
+    rmax=rmax2, θmin_deg=-θzoom2, θmax_deg=θzoom2, pul=-180, pll=-270)
 
 # ╔═╡ 0c0805e3-62a5-4858-bab3-69a248090006
 section_figure(G3, "G₃(s)", ω_idx3;
     neg_real_pts=[(1/sqrt(2), 2/3, "K=3/2"), (0.0, 1/2, "K=2")],
-    rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3)
+    rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3, pul=220,pll=180)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1879,7 +1879,6 @@ version = "4.1.0+0"
 # ╔═╡ Cell order:
 # ╠═63f6d141-e3e3-4b2f-b197-201cfd481111
 # ╟─088fcb9e-b1ec-4ec8-b4bd-b5d9e3ec2222
-# ╠═c8868669-0362-47bc-b35e-fd338bae727e
 # ╟─82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
@@ -1900,12 +1899,13 @@ version = "4.1.0+0"
 # ╟─ef48c0f6-49b9-46cb-ac53-12fcfd520005
 # ╟─0c0805e3-62a5-4858-bab3-69a248090006
 # ╠═d05b9de4-d377-49ab-938f-b6ef85acb049
-# ╠═33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
-# ╠═0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
-# ╠═526d3412-6b3d-4475-a387-49183bc5aeb6
-# ╠═23d277f4-c3e7-421a-8626-271b97e088a2
-# ╠═141140a6-48f9-422d-8e68-dd781ea634a0
-# ╠═444637e7-826d-442f-b84f-1355071ececf
-# ╠═86b8cb9c-cfd3-49f0-af47-ec0f81286b09
+# ╠═c8868669-0362-47bc-b35e-fd338bae727e
+# ╟─33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
+# ╟─0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
+# ╟─526d3412-6b3d-4475-a387-49183bc5aeb6
+# ╟─23d277f4-c3e7-421a-8626-271b97e088a2
+# ╟─141140a6-48f9-422d-8e68-dd781ea634a0
+# ╟─444637e7-826d-442f-b84f-1355071ececf
+# ╟─86b8cb9c-cfd3-49f0-af47-ec0f81286b09
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
