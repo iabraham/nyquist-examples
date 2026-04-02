@@ -1,6 +1,6 @@
-# nyquist-examples
+# Nyquist Examples
 
-Interactive Pluto notebook for teaching how **Bode magnitude/phase data maps directly to Nyquist curves**.
+Interactive Pluto notebook demonstrating how **Bode magnitude/phase data maps directly to Nyquist curves**.
 
 ## What changed in this revision
 
@@ -11,7 +11,7 @@ Interactive Pluto notebook for teaching how **Bode magnitude/phase data maps dir
 ## Notebook
 
 - File: `nyquist_examples.jl`
-- Topics covered:
+- Examples covered:
   - Section 1: \(G_1(s)=1/((s+1)(s+2))\)
   - Section 2: \(G_2(s)=1/((s-1)(s^2+2s+3))\)
   - Section 3: \(G_3(s)=(s-1)/((s+2)(s^2-s+1))\)
