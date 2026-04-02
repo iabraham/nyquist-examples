@@ -97,7 +97,7 @@ begin
 
         mag_dB_c = 20log10(max(mag_c, 1e-12))
         ax_mag = Axis(fig[1, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Magnitude (dB)",
-            title="Bode Magnitude — $label\n|G(jω)| = $(round(mag_dB_c, digits=2)) dB  at  ω = $(round(ω_c, sigdigits=4)) rad/s")
+            title="Bode Magnitude — $label\n|G(jω)| = $(round(mag_c, digits=2))  at  ω = $(round(ω_c, sigdigits=4)) rad/s", titlesize=20)
         lines!(ax_mag, ω_range, mag_dB, color=:steelblue, linewidth=2)
         hlines!(ax_mag, [0.0], color=:black, linestyle=:dash)
         scatter!(ax_mag, [ω_c], [mag_dB_c], color=:green, markersize=12)
@@ -109,7 +109,7 @@ begin
         end
 
         ax_phase = Axis(fig[2, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Phase (deg)",
-            title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s")
+            title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s", titlesize=20)
         lines!(ax_phase, ω_range, phase_deg, color=:steelblue, linewidth=2)
         hlines!(ax_phase, [-180.0], color=:crimson, linestyle=:dash)
         hlines!(ax_phase, [0.0], color=:black, linestyle=:dot)
@@ -152,9 +152,6 @@ G1 = RationalTF([1.0], [1.0, 3.0, 2.0])
 # ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
 md"""Bode slider: $(@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=false))"""
 
-# ╔═╡ 09ad965e-1391-41ca-ba0f-00670c7e0603
-md"""$(ω_range[ω_idx1])"""
-
 # ╔═╡ d16fbe37-efb8-4c26-9b65-378f59487777
 md"""Radius slider: $(@bind rmax1 PlutoUI.Slider(0.2:0.01:1.2, default=0.6, show_value=true))"""
 
@@ -175,14 +172,11 @@ G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
 # ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
 md"""Bode slider: $(@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=false))"""
 
-# ╔═╡ a8e1bafb-704a-40c5-8388-6c280379e14d
-md"""$(ω_range[ω_idx2])"""
-
 # ╔═╡ 6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
 md"""Radius slider $(@bind rmax2 PlutoUI.Slider(0.2:0.01:0.8, default=0.45, show_value=true))"""
 
 # ╔═╡ 875ce4c8-9f57-4f2f-8f8d-e47a99c8eeee
-md"""Theta slider: $(@bind θzoom2 PlutoUI.Slider(40:5:220, default=120, show_value=true))"""
+md"""Theta slider: $(@bind θzoom2 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
 # ╔═╡ 9ffd6c95-d6a7-4f6a-9f32-88e58d39ffff
 section_figure(G2, "G₂(s)", ω_idx2;
@@ -200,14 +194,11 @@ G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
 # ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
 md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
 
-# ╔═╡ 00cb9401-e4ae-4bb7-ac6d-25bb269c5088
-md"""$(ω_range[ω_idx3])"""
-
 # ╔═╡ 1a768a4e-f2c7-4ec6-8a39-37e86b610004
 md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, show_value=true))"""
 
 # ╔═╡ ef48c0f6-49b9-46cb-ac53-12fcfd520005
-md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:220, default=130, show_value=true))"""
+md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
 # ╔═╡ 0c0805e3-62a5-4858-bab3-69a248090006
 section_figure(G3, "G₃(s)", ω_idx3;
@@ -1853,21 +1844,18 @@ version = "4.1.0+0"
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
 # ╟─b913b8b6-f74a-4d8c-b6a6-547fc3e56666
-# ╟─09ad965e-1391-41ca-ba0f-00670c7e0603
 # ╟─d16fbe37-efb8-4c26-9b65-378f59487777
 # ╟─e65be8ba-5723-4efb-8ec8-fca719f28888
 # ╟─98abf2c4-17ef-428e-b4f6-53347e349999
 # ╟─e2be7a3b-a73d-4d8c-9d6a-8d4f5770aaaa
 # ╟─c9f7b88d-2b63-4f9f-8664-56374790bbbb
 # ╟─2fb9d965-9c0a-4e60-8847-d6fbb593cccc
-# ╟─a8e1bafb-704a-40c5-8388-6c280379e14d
 # ╟─6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
 # ╟─875ce4c8-9f57-4f2f-8f8d-e47a99c8eeee
 # ╟─9ffd6c95-d6a7-4f6a-9f32-88e58d39ffff
 # ╟─14dbde3f-3fc9-40e7-8d75-f66cbf620001
 # ╟─a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
 # ╟─2f20678d-e7f4-4731-a9a1-da58df280003
-# ╟─00cb9401-e4ae-4bb7-ac6d-25bb269c5088
 # ╟─1a768a4e-f2c7-4ec6-8a39-37e86b610004
 # ╟─ef48c0f6-49b9-46cb-ac53-12fcfd520005
 # ╟─0c0805e3-62a5-4858-bab3-69a248090006
