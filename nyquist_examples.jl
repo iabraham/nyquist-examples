@@ -34,16 +34,74 @@ This notebook computes frequency responses directly from polynomial coefficients
 Use the sliders in each section to move a marker and to zoom the polar view (radius + angle window).
 """
 
-# ╔═╡ 82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
-begin
+# ╔═╡ c8868669-0362-47bc-b35e-fd338bae727e
+const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400);
+
+# ╔═╡ 56f5984f-c0d6-4dd2-83c8-a77f877d4444
+md"""
+## Section 1 — $G_1(s)=\frac{1}{(s+1)(s+2)}$, stable for $K>-2$
+"""
+
+# ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
+md"""Bode slider: $(@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=false))"""
+
+# ╔═╡ d16fbe37-efb8-4c26-9b65-378f59487777
+md"""Radius slider: $(@bind rmax1 PlutoUI.Slider(0.2:0.01:1.2, default=0.6, show_value=true))"""
+
+# ╔═╡ e65be8ba-5723-4efb-8ec8-fca719f28888
+md"""Theta slider: $(@bind θzoom1 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
+
+# ╔═╡ e2be7a3b-a73d-4d8c-9d6a-8d4f5770aaaa
+md"""
+## Section 2 — $G_2(s)=\frac{1}{(s-1)(s^2+2s+3)}$, stable for $3<K<4$
+"""
+
+# ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
+md"""Bode slider: $(@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=false))"""
+
+# ╔═╡ 6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
+md"""Radius slider $(@bind rmax2 PlutoUI.Slider(0.2:0.01:0.8, default=0.45, show_value=true))"""
+
+# ╔═╡ 875ce4c8-9f57-4f2f-8f8d-e47a99c8eeee
+md"""Theta slider: $(@bind θzoom2 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
+
+# ╔═╡ 14dbde3f-3fc9-40e7-8d75-f66cbf620001
+md"""
+## Section 3 — $G_3(s)=\frac{s-1}{(s+2)(s^2-s+1)}$, stable for $\frac{3}{2}<K<2$
+"""
+
+# ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
+md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
+
+# ╔═╡ 1a768a4e-f2c7-4ec6-8a39-37e86b610004
+md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, show_value=true))"""
+
+# ╔═╡ ef48c0f6-49b9-46cb-ac53-12fcfd520005
+md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
+
+# ╔═╡ d05b9de4-d377-49ab-938f-b6ef85acb049
     struct RationalTF
         num::Vector{Float64}  # descending powers
         den::Vector{Float64}  # descending powers
     end
 
-    polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
-    eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
+# ╔═╡ 71f042f8-f79e-4707-9275-01f1ba7f5555
+G1 = RationalTF([1.0], [1.0, 3.0, 2.0])
 
+# ╔═╡ c9f7b88d-2b63-4f9f-8664-56374790bbbb
+G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
+
+# ╔═╡ a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
+G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
+
+# ╔═╡ 0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
+    polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
+
+
+# ╔═╡ 33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
+  eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
+
+# ╔═╡ 526d3412-6b3d-4475-a387-49183bc5aeb6
     function unwrap_phase(phase::Vector{Float64})
         unwrapped = copy(phase)
         for i in 2:length(unwrapped)
@@ -53,9 +111,8 @@ begin
         return unwrapped
     end
 
-    const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400)
-
-    function freq_data(G::RationalTF, ω_arr)
+# ╔═╡ 23d277f4-c3e7-421a-8626-271b97e088a2
+  function freq_data(G::RationalTF, ω_arr)
         h = eval_tf.(Ref(G), im .* ω_arr)
         mag = abs.(h)
         phase_rad = angle.(h)
@@ -93,121 +150,94 @@ begin
         return h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph
     end
 
-    function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], rmax=1.0, θmin_deg=-210, θmax_deg=210)
-        h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = freq_data(G, ω_range)
-
-        ω_c = ω_range[ω_idx]
-        mag_c = mag[ω_idx]
-        ph_c = phase_deg[ω_idx]
-        ph_rad_c = phase_rad[ω_idx]
-        mag_dB = 20 .* log10.(max.(mag, 1e-12))
-
-        fig = Figure(size=(1200, 680))
-
-        mag_dB_c = 20log10(max(mag_c, 1e-12))
-        ax_mag = Axis(fig[1, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Magnitude (dB)",
-            title="Bode Magnitude — $label\n|G(jω)| = $(round(mag_c, digits=2))  at  ω = $(round(ω_c, sigdigits=4)) rad/s", titlesize=20)
-        lines!(ax_mag, ω_range, mag_dB, color=:steelblue, linewidth=2)
-        hlines!(ax_mag, [0.0], color=:black, linestyle=:dash)
-        scatter!(ax_mag, [ω_c], [mag_dB_c], color=:green, markersize=12)
-        for ωpc in p_cross_ω
-            vlines!(ax_mag, [ωpc], color=:crimson, linestyle=:dot)
-        end
-        for ωgc in g_cross_ω
-            vlines!(ax_mag, [ωgc], color=:darkorange, linestyle=:dot)
-        end
-
-        ax_phase = Axis(fig[2, 1], xscale=log10, xlabel="ω (rad/s)", ylabel="Phase (deg)",
-            title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s", titlesize=20)
-        lines!(ax_phase, ω_range, phase_deg, color=:steelblue, linewidth=2)
-        hlines!(ax_phase, [-180.0], color=:crimson, linestyle=:dash)
-        hlines!(ax_phase, [0.0], color=:black, linestyle=:dot)
-        scatter!(ax_phase, [ω_c], [ph_c], color=:green, markersize=12)
-        for (ωgc, phgc) in zip(g_cross_ω, g_cross_ph)
-            scatter!(ax_phase, [ωgc], [phgc], color=:darkorange, marker=:star5, markersize=13)
-        end
-
-        pax = PolarAxis(fig[:, 2], title="Nyquist Polar — $label",
-            thetalimits=(deg2rad(θmin_deg), deg2rad(θmax_deg)),
-            rlimits=(0.0, rmax))
-        lines!(pax, phase_rad, mag, color=:steelblue, linewidth=2)
-        lines!(pax, -phase_rad, mag, color=:steelblue, linewidth=1.5, linestyle=:dash)
-
-        θ_unit = range(0, 2π, length=240)
-        lines!(pax, θ_unit, ones(length(θ_unit)), color=:gray, linestyle=:dot)
-
-        scatter!(pax, [π], [1.0], color=:black, marker=:diamond, markersize=10)
-        for (_, r_nb, _) in neg_real_pts
-            scatter!(pax, [π], [r_nb], color=:purple, marker=:star5, markersize=13)
-        end
-        for mpc in p_cross_mag
-            scatter!(pax, [π], [mpc], color=:crimson, marker=:xcross, markersize=12)
-        end
-        scatter!(pax, [ph_rad_c], [mag_c], color=:green, markersize=12)
-        scatter!(pax, [-ph_rad_c], [mag_c], color=:limegreen, markersize=9)
-
-        fig
-    end
+# ╔═╡ 141140a6-48f9-422d-8e68-dd781ea634a0
+function phase_plot(fig, label, ω_idx, fdata)
+	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
+	ω_c = ω_range[ω_idx]
+	ph_c = phase_deg[ω_idx]
+	ax_phase = Axis(fig[2, 1], xscale=log10, xlabel="ω (rad/s)", 
+					ylabel="Phase (deg)", title="Bode Phase — $label\n∠G(jω) = $(round(ph_c, digits=1))°  at  ω = $(round(ω_c, sigdigits=4)) rad/s",
+					titlesize=20)
+	lines!(ax_phase, ω_range, phase_deg, color=:steelblue, linewidth=2)
+	hlines!(ax_phase, [-180.0], color=:crimson, linestyle=:dash)
+	hlines!(ax_phase, [0.0], color=:black, linestyle=:dot)
+	scatter!(ax_phase, [ω_c], [ph_c], color=:green, markersize=12)
+	for (ωgc, phgc) in zip(g_cross_ω, g_cross_ph)
+		scatter!(ax_phase, [ωgc], [phgc], color=:darkorange, 
+				 marker=:star5, markersize=13)
+	end
+	return ax_phase
 end
 
-# ╔═╡ 56f5984f-c0d6-4dd2-83c8-a77f877d4444
-md"""
-## Section 1 — $G_1(s)=\frac{1}{(s+1)(s+2)}$, stable for $K>-2$
-"""
+# ╔═╡ 444637e7-826d-442f-b84f-1355071ececf
+function mag_plot(fig, label, ω_idx, fdata)
+	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
+	mag_c = mag[ω_idx]
+	ω_c = ω_range[ω_idx]
+	mag_dB = 20 .* log10.(max.(mag, 1e-12))
+	mag_dB_c = 20log10(max(mag_c, 1e-12))
+	ax_mag = Axis(fig[1, 1], xscale=log10, xlabel="ω (rad/s)", 
+				  ylabel="Magnitude (dB)", 
+				  title="Bode Magnitude — $label\n|G(jω)| = $(round(mag_c, digits=2))  at  ω = $(round(ω_c, sigdigits=4)) rad/s", 
+				  titlesize=20)
+	
+	lines!(ax_mag, ω_range, mag_dB, color=:steelblue, linewidth=2)
+	hlines!(ax_mag, [0.0], color=:black, linestyle=:dash)
+	scatter!(ax_mag, [ω_c], [mag_dB_c], color=:green, markersize=12)
+	for ωpc in p_cross_ω
+		vlines!(ax_mag, [ωpc], color=:crimson, linestyle=:dot)
+	end
+	for ωgc in g_cross_ω
+		vlines!(ax_mag, [ωgc], color=:darkorange, linestyle=:dot)
+	end
+	return ax_mag 
+end
 
-# ╔═╡ 71f042f8-f79e-4707-9275-01f1ba7f5555
-G1 = RationalTF([1.0], [1.0, 3.0, 2.0])
+# ╔═╡ 86b8cb9c-cfd3-49f0-af47-ec0f81286b09
+function polar_plot(fig,label, ω_idx, fdata, neg_real_pts, rmax, θmin_deg, θmax_deg)
+	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
+	ph_rad_c = phase_rad[ω_idx]
+	mag_c = mag[ω_idx]
+	pax = PolarAxis(fig[:, 2], title="Nyquist Polar — $label",
+		thetalimits=(deg2rad(θmin_deg), deg2rad(θmax_deg)),
+		rlimits=(0.0, rmax))
+	lines!(pax, phase_rad, mag, color=:steelblue, linewidth=2)
+	lines!(pax, -phase_rad, mag, color=:steelblue, linewidth=1.5, linestyle=:dash)
 
-# ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
-md"""Bode slider: $(@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=false))"""
+	θ_unit = range(0, 2π, length=240)
+	lines!(pax, θ_unit, ones(length(θ_unit)), color=:gray, linestyle=:dot)
 
-# ╔═╡ d16fbe37-efb8-4c26-9b65-378f59487777
-md"""Radius slider: $(@bind rmax1 PlutoUI.Slider(0.2:0.01:1.2, default=0.6, show_value=true))"""
+	scatter!(pax, [π], [1.0], color=:black, marker=:diamond, markersize=10)
+	for (_, r_nb, _) in neg_real_pts
+		scatter!(pax, [π], [r_nb], color=:purple, marker=:star5, markersize=13)
+	end
+	for mpc in p_cross_mag
+		scatter!(pax, [π], [mpc], color=:crimson, marker=:xcross, markersize=12)
+	end
+	scatter!(pax, [ph_rad_c], [mag_c], color=:green, markersize=12)
+	scatter!(pax, [-ph_rad_c], [mag_c], color=:limegreen, markersize=9)
+	return pax
+end
 
-# ╔═╡ e65be8ba-5723-4efb-8ec8-fca719f28888
-md"""Theta slider: $(@bind θzoom1 PlutoUI.Slider(40:5:180, default=140, show_value=true))"""
+# ╔═╡ 82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
+function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], 
+						rmax=1.0, θmin_deg=-210, θmax_deg=210)
+	fdata = freq_data(G, ω_range)
+	h, mag, phase_deg, phase_rad, p_cross_ω, p_cross_mag, g_cross_ω, g_cross_ph = fdata
+	fig = Figure(size=(1200, 680))	
+    ax_mag = mag_plot(fig, label, ω_idx, fdata)
+	ax_phase = phase_plot(fig, label, ω_idx, fdata)
+	pax = polar_plot(fig, label, ω_idx, fdata,neg_real_pts,rmax, θmin_deg, θmax_deg)
+	fig
+end
 
 # ╔═╡ 98abf2c4-17ef-428e-b4f6-53347e349999
 section_figure(G1, "G₁(s)", ω_idx1; neg_real_pts=[], rmax=rmax1, θmin_deg=-θzoom1, θmax_deg=θzoom1)
-
-# ╔═╡ e2be7a3b-a73d-4d8c-9d6a-8d4f5770aaaa
-md"""
-## Section 2 — $G_2(s)=\frac{1}{(s-1)(s^2+2s+3)}$, stable for $3<K<4$
-"""
-
-# ╔═╡ c9f7b88d-2b63-4f9f-8664-56374790bbbb
-G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
-
-# ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
-md"""Bode slider: $(@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=false))"""
-
-# ╔═╡ 6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
-md"""Radius slider $(@bind rmax2 PlutoUI.Slider(0.2:0.01:0.8, default=0.45, show_value=true))"""
-
-# ╔═╡ 875ce4c8-9f57-4f2f-8f8d-e47a99c8eeee
-md"""Theta slider: $(@bind θzoom2 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
 # ╔═╡ 9ffd6c95-d6a7-4f6a-9f32-88e58d39ffff
 section_figure(G2, "G₂(s)", ω_idx2;
     neg_real_pts=[(0.0, 1/3, "K=3"), (1.0, 1/4, "K=4")],
     rmax=rmax2, θmin_deg=-θzoom2, θmax_deg=θzoom2)
-
-# ╔═╡ 14dbde3f-3fc9-40e7-8d75-f66cbf620001
-md"""
-## Section 3 — $G_3(s)=\frac{s-1}{(s+2)(s^2-s+1)}$, stable for $\frac{3}{2}<K<2$
-"""
-
-# ╔═╡ a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
-G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
-
-# ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
-md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
-
-# ╔═╡ 1a768a4e-f2c7-4ec6-8a39-37e86b610004
-md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, show_value=true))"""
-
-# ╔═╡ ef48c0f6-49b9-46cb-ac53-12fcfd520005
-md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
 # ╔═╡ 0c0805e3-62a5-4858-bab3-69a248090006
 section_figure(G3, "G₃(s)", ω_idx3;
@@ -1849,6 +1879,7 @@ version = "4.1.0+0"
 # ╔═╡ Cell order:
 # ╠═63f6d141-e3e3-4b2f-b197-201cfd481111
 # ╟─088fcb9e-b1ec-4ec8-b4bd-b5d9e3ec2222
+# ╠═c8868669-0362-47bc-b35e-fd338bae727e
 # ╟─82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
@@ -1868,5 +1899,13 @@ version = "4.1.0+0"
 # ╟─1a768a4e-f2c7-4ec6-8a39-37e86b610004
 # ╟─ef48c0f6-49b9-46cb-ac53-12fcfd520005
 # ╟─0c0805e3-62a5-4858-bab3-69a248090006
+# ╠═d05b9de4-d377-49ab-938f-b6ef85acb049
+# ╠═33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
+# ╠═0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
+# ╠═526d3412-6b3d-4475-a387-49183bc5aeb6
+# ╠═23d277f4-c3e7-421a-8626-271b97e088a2
+# ╠═141140a6-48f9-422d-8e68-dd781ea634a0
+# ╠═444637e7-826d-442f-b84f-1355071ececf
+# ╠═86b8cb9c-cfd3-49f0-af47-ec0f81286b09
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
