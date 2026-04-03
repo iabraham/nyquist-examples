@@ -34,16 +34,13 @@ This notebook computes frequency responses directly from polynomial coefficients
 Use the sliders in each section to move a marker and to zoom the polar view (radius + angle window).
 """
 
-# ╔═╡ c8868669-0362-47bc-b35e-fd338bae727e
-const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400);
+# ╔═╡ dd42c06f-9f52-47a1-91ae-1f54f32f7269
+md"""In the below we asssume $G_i(s)$ is the open-loop transfer function and it is connected in standard (negative) unity feedback configuration with scalar gain $K$. """
 
 # ╔═╡ 56f5984f-c0d6-4dd2-83c8-a77f877d4444
 md"""
 ## Section 1 — $G_1(s)=\frac{1}{(s+1)(s+2)}$, stable for $K>-2$
 """
-
-# ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
-md"""Bode slider: $(@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=false))"""
 
 # ╔═╡ d16fbe37-efb8-4c26-9b65-378f59487777
 md"""Radius slider: $(@bind rmax1 PlutoUI.Slider(0.2:0.01:1.2, default=0.6, show_value=true))"""
@@ -56,9 +53,6 @@ md"""
 ## Section 2 — $G_2(s)=\frac{1}{(s-1)(s^2+2s+3)}$, stable for $3<K<4$
 """
 
-# ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
-md"""Bode slider: $(@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=false))"""
-
 # ╔═╡ 6f56197a-3b8e-4d1f-8cdd-fef3b8a2dddd
 md"""Radius slider $(@bind rmax2 PlutoUI.Slider(0.2:0.01:0.8, default=0.45, show_value=true))"""
 
@@ -69,9 +63,6 @@ md"""Theta slider: $(@bind θzoom2 PlutoUI.Slider(40:5:180, default=180, show_va
 md"""
 ## Section 3 — $G_3(s)=\frac{s-1}{(s+2)(s^2-s+1)}$, stable for $\frac{3}{2}<K<2$
 """
-
-# ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
-md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
 
 # ╔═╡ 1a768a4e-f2c7-4ec6-8a39-37e86b610004
 md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, show_value=true))"""
@@ -126,6 +117,17 @@ G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
 
 # ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
 G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
+# ╔═╡ c8868669-0362-47bc-b35e-fd338bae727e
+const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400);
+
+# ╔═╡ b913b8b6-f74a-4d8c-b6a6-547fc3e56666
+md"""Bode slider: $(@bind ω_idx1 PlutoUI.Slider(1:length(ω_range), default=280, show_value=false))"""
+
+# ╔═╡ 2fb9d965-9c0a-4e60-8847-d6fbb593cccc
+md"""Bode slider: $(@bind ω_idx2 PlutoUI.Slider(1:length(ω_range), default=390, show_value=false))"""
+
+# ╔═╡ 2f20678d-e7f4-4731-a9a1-da58df280003
+md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
 
 # ╔═╡ 0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
     polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
@@ -2000,6 +2002,7 @@ version = "4.1.0+0"
 # ╠═63f6d141-e3e3-4b2f-b197-201cfd481111
 # ╟─088fcb9e-b1ec-4ec8-b4bd-b5d9e3ec2222
 # ╟─82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
+# ╟─dd42c06f-9f52-47a1-91ae-1f54f32f7269
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
 # ╟─b913b8b6-f74a-4d8c-b6a6-547fc3e56666
