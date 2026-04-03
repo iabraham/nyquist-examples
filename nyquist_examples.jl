@@ -79,6 +79,36 @@ md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, sho
 # ╔═╡ ef48c0f6-49b9-46cb-ac53-12fcfd520005
 md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001001
+md"""
+## Section 4 — $G_4(s)=\frac{40}{s^3+6s^2+11s+6}$
+
+This section emphasizes **Gain/Phase Margin interpretation from Nyquist geometry**.  
+Use the gain slider to scale $K G_4(j\omega)$, and use the rectangle controls to pan/zoom the Cartesian Nyquist view.
+"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001002
+md"""Gain slider: $(@bind K4 PlutoUI.Slider(0.05:0.01:5.0, default=1.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001003
+md"""Rectangle center x: $(@bind cx4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001004
+md"""Rectangle center y: $(@bind cy4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001005
+md"""Rectangle lower-left x (relative): $(@bind llx4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001006
+md"""Rectangle lower-left y (relative): $(@bind lly4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001007
+md"""Rectangle upper-right x (relative): $(@bind urx4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001008
+md"""Rectangle upper-right y (relative): $(@bind ury4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+
 # ╔═╡ d05b9de4-d377-49ab-938f-b6ef85acb049
     struct RationalTF
         num::Vector{Float64}  # descending powers
@@ -93,6 +123,9 @@ G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
 
 # ╔═╡ a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
 G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
+G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
 
 # ╔═╡ 0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
     polyval_desc(c::Vector{Float64}, s) = foldl((acc, a) -> acc*s + a, c[2:end]; init=c[1])
@@ -231,6 +264,90 @@ function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[],
 	fig
 end
 
+function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
+    xs = Float64[]
+    idxs = Int[]
+    for i in 2:length(y)
+        y1, y2 = y[i-1], y[i]
+        if y1 == 0
+            push!(xs, x[i-1])
+            push!(idxs, i-1)
+        elseif y1 * y2 <= 0
+            α = abs(y1) / (abs(y1) + abs(y2) + 1e-14)
+            push!(xs, x[i-1] * (1 - α) + x[i] * α)
+            push!(idxs, i-1)
+        end
+    end
+    return xs, idxs
+end
+
+function unit_circle_crossings(h::Vector{ComplexF64}, ω_arr)
+    mags = abs.(h)
+    xs, ys, ωs = Float64[], Float64[], Float64[]
+    for i in 2:length(mags)
+        d1, d2 = mags[i-1] - 1, mags[i] - 1
+        if d1 == 0
+            push!(xs, real(h[i-1]))
+            push!(ys, imag(h[i-1]))
+            push!(ωs, ω_arr[i-1])
+        elseif d1 * d2 <= 0
+            α = abs(d1) / (abs(d1) + abs(d2) + 1e-14)
+            hc = h[i-1] * (1 - α) + h[i] * α
+            ωc = exp(log(ω_arr[i-1]) * (1-α) + log(ω_arr[i]) * α)
+            push!(xs, real(hc))
+            push!(ys, imag(hc))
+            push!(ωs, ωc)
+        end
+    end
+    return xs, ys, ωs
+end
+
+function section4_nyquist_figure(G::RationalTF, K; cx=0.0, cy=0.0, llx=-1.5, lly=-1.5, urx=1.5, ury=1.5)
+    hpos = K .* eval_tf.(Ref(G), im .* ω_range)
+    hneg = K .* eval_tf.(Ref(G), -im .* ω_range)
+
+    xlims = (cx + min(llx, urx), cx + max(llx, urx))
+    ylims = (cy + min(lly, ury), cy + max(lly, ury))
+
+    fig = Figure(size=(980, 760))
+    ax = Axis(fig[1, 1],
+        xlabel="Re[K G₄(jω)]",
+        ylabel="Im[K G₄(jω)]",
+        title="Nyquist (Cartesian) — K = $(round(K, digits=2))",
+        aspect=DataAspect())
+
+    lines!(ax, real.(hpos), imag.(hpos), color=:steelblue, linewidth=2)
+    lines!(ax, real.(hneg), imag.(hneg), color=:steelblue, linewidth=1.6, linestyle=:dash)
+
+    θ = range(0, 2π, length=400)
+    lines!(ax, cos.(θ), sin.(θ), color=:gray40, linestyle=:dot, linewidth=1.8)
+
+    hlines!(ax, [0.0], color=:black, linestyle=:dot)
+    vlines!(ax, [0.0], color=:black, linestyle=:dot)
+    scatter!(ax, [-1.0], [0.0], color=:black, marker=:diamond, markersize=11)
+
+    x_real, _ = zero_crossings_xy(real.(hpos), imag.(hpos))
+    if !isempty(x_real)
+        scatter!(ax, x_real, zeros(length(x_real)), color=:purple, marker=:star5, markersize=15)
+    end
+
+    xu, yu, ωu = unit_circle_crossings(hpos, ω_range)
+    if !isempty(xu)
+        scatter!(ax, xu, yu, color=:darkorange, marker=:xcross, markersize=14, linewidth=2)
+    end
+
+    rect = Rect2f(xlims[1], ylims[1], xlims[2] - xlims[1], ylims[2] - ylims[1])
+    poly!(ax, rect, color=(:orange, 0.06), strokecolor=:darkorange, strokewidth=2)
+    scatter!(ax, [cx], [cy], color=:red, marker=:circle, markersize=11)
+
+    xlims!(ax, xlims)
+    ylims!(ax, ylims)
+
+    details = "Real-axis crossings: $(length(x_real)); unit-circle crossings: $(length(xu))"
+    Label(fig[2, 1], details, tellwidth=false, halign=:left)
+    fig
+end
+
 # ╔═╡ 98abf2c4-17ef-428e-b4f6-53347e349999
 section_figure(G1, "G₁(s)", ω_idx1; neg_real_pts=[], rmax=rmax1, θmin_deg=-θzoom1, θmax_deg=θzoom1, pll=-180, pul=0)
 
@@ -243,6 +360,9 @@ section_figure(G2, "G₂(s)", ω_idx2;
 section_figure(G3, "G₃(s)", ω_idx3;
     neg_real_pts=[(1/sqrt(2), 2/3, "K=3/2"), (0.0, 1/2, "K=2")],
     rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3, pul=220,pll=180)
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001010
+section4_nyquist_figure(G4, K4; cx=cx4, cy=cy4, llx=llx4, lly=lly4, urx=urx4, ury=ury4)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
