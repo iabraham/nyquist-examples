@@ -34,6 +34,46 @@ This notebook computes frequency responses directly from polynomial coefficients
 Use the sliders in each section to move a marker and to zoom the polar view (radius + angle window).
 """
 
+# ╔═╡ 9493cd83-dc8e-429c-97fc-219b1307580b
+function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
+    xs = Float64[]
+    idxs = Int[]
+    for i in 2:length(y)
+        y1, y2 = y[i-1], y[i]
+        if y1 == 0
+            push!(xs, x[i-1])
+            push!(idxs, i-1)
+        elseif y1 * y2 <= 0
+            α = abs(y1) / (abs(y1) + abs(y2) + 1e-14)
+            push!(xs, x[i-1] * (1 - α) + x[i] * α)
+            push!(idxs, i-1)
+        end
+    end
+    return xs, idxs
+end
+
+# ╔═╡ fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
+function unit_circle_crossings(h::Vector{ComplexF64}, ω_arr)
+    mags = abs.(h)
+    xs, ys, ωs = Float64[], Float64[], Float64[]
+    for i in 2:length(mags)
+        d1, d2 = mags[i-1] - 1, mags[i] - 1
+        if d1 == 0
+            push!(xs, real(h[i-1]))
+            push!(ys, imag(h[i-1]))
+            push!(ωs, ω_arr[i-1])
+        elseif d1 * d2 <= 0
+            α = abs(d1) / (abs(d1) + abs(d2) + 1e-14)
+            hc = h[i-1] * (1 - α) + h[i] * α
+            ωc = exp(log(ω_arr[i-1]) * (1-α) + log(ω_arr[i]) * α)
+            push!(xs, real(hc))
+            push!(ys, imag(hc))
+            push!(ωs, ωc)
+        end
+    end
+    return xs, ys, ωs
+end
+
 # ╔═╡ dd42c06f-9f52-47a1-91ae-1f54f32f7269
 md"""In the below we asssume $G_i(s)$ is the open-loop transfer function and it is connected in standard (negative) unity feedback configuration with scalar gain $K$. """
 
@@ -71,35 +111,6 @@ md"""Radius slider: $(@bind rmax3 PlutoUI.Slider(0.2:0.01:1.0, default=0.72, sho
 md"""Theta slider: $(@bind θzoom3 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
 
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001001
-md"""
-## Section 4 — $G_4(s)=\frac{40}{s^3+6s^2+11s+6}$
-
-This section emphasizes **Gain/Phase Margin interpretation from Nyquist geometry**.  
-Use the gain slider to scale $K G_4(j\omega)$, and use the rectangle controls to pan/zoom the Cartesian Nyquist view.
-"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001002
-md"""Gain slider: $(@bind K4 PlutoUI.Slider(0.05:0.01:5.0, default=1.0, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001003
-md"""Rectangle center x: $(@bind cx4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001004
-md"""Rectangle center y: $(@bind cy4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001005
-md"""Rectangle lower-left x (relative): $(@bind llx4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001006
-md"""Rectangle lower-left y (relative): $(@bind lly4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001007
-md"""Rectangle upper-right x (relative): $(@bind urx4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
-
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001008
-md"""Rectangle upper-right y (relative): $(@bind ury4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
-
 # ╔═╡ d05b9de4-d377-49ab-938f-b6ef85acb049
     struct RationalTF
         num::Vector{Float64}  # descending powers
@@ -115,8 +126,6 @@ G2 = RationalTF([1.0], [1.0, 1.0, 1.0, -3.0])
 # ╔═╡ a3b8b48e-cb73-4f9c-b267-c2ba8bf60002
 G3 = RationalTF([1.0, -1.0], [1.0, 1.0, -1.0, 2.0])
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
-G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
 # ╔═╡ c8868669-0362-47bc-b35e-fd338bae727e
 const ω_range = 10 .^ range(log10(0.005), log10(500), length=1400);
 
@@ -135,6 +144,53 @@ md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300
 
 # ╔═╡ 33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
   eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
+
+# ╔═╡ add032b1-ee73-4471-81c4-f0eec56690fa
+function section4_nyquist_figure(G::RationalTF, K; cx=0.0, cy=0.0, llx=-1.5, lly=-1.5, urx=1.5, ury=1.5)
+    hpos = K .* eval_tf.(Ref(G), im .* ω_range)
+    hneg = K .* eval_tf.(Ref(G), -im .* ω_range)
+
+    xlims = (cx + min(llx, urx), cx + max(llx, urx))
+    ylims = (cy + min(lly, ury), cy + max(lly, ury))
+
+    fig = Figure(size=(980, 760))
+    ax = Axis(fig[1, 1],
+        xlabel="Re[K G₄(jω)]",
+        ylabel="Im[K G₄(jω)]",
+        title="Nyquist (Cartesian) — K = $(round(K, digits=2))",
+        aspect=DataAspect())
+
+    lines!(ax, real.(hpos), imag.(hpos), color=:steelblue; linewidth=2)
+    lines!(ax, real.(hneg), imag.(hneg), color=:steelblue; linewidth=1.6, linestyle=:dash)
+
+    θ = range(0, 2π, length=400)
+    lines!(ax, cos.(θ), sin.(θ), color=:gray40, linestyle=:dot, linewidth=1.8)
+
+    hlines!(ax, [0.0], color=:black, linestyle=:dot)
+    vlines!(ax, [0.0], color=:black, linestyle=:dot)
+    scatter!(ax, [-1.0], [0.0], color=:black, marker=:diamond, markersize=11)
+
+    x_real, _ = zero_crossings_xy(real.(hpos), imag.(hpos))
+    if !isempty(x_real)
+        scatter!(ax, x_real, zeros(length(x_real)), color=:purple, marker=:star5, markersize=15)
+    end
+
+    xu, yu, ωu = unit_circle_crossings(hpos, ω_range)
+    if !isempty(xu)
+        scatter!(ax, xu, yu, color=:darkorange, marker=:xcross, markersize=14)
+    end
+
+    rect = Rect2f(xlims[1], ylims[1], xlims[2] - xlims[1], ylims[2] - ylims[1])
+    poly!(ax, rect, color=(:orange, 0.06), strokecolor=:darkorange, strokewidth=2)
+    scatter!(ax, [cx], [cy], color=:red, marker=:circle, markersize=11)
+
+    xlims!(ax, xlims)
+    ylims!(ax, ylims)
+
+    details = "Real-axis crossings: $(length(x_real)); unit-circle crossings: $(length(xu))"
+    Label(fig[2, 1], details, tellwidth=false, halign=:left)
+    fig
+end
 
 # ╔═╡ 526d3412-6b3d-4475-a387-49183bc5aeb6
     function unwrap_phase(phase::Vector{Float64})
@@ -254,7 +310,7 @@ function polar_plot(fig,label, ω_idx, fdata, neg_real_pts, rmax, θmin_deg, θm
 	return pax
 end
 
-# ╔═╡ 82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
+# ╔═╡ 513d6eee-b6ec-4431-99da-c7cff27f5775
 function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], 
 						rmax=1.0, θmin_deg=-210, θmax_deg=210, pul=0, pll=-180)
 	fdata = freq_data(G, ω_range)
@@ -264,90 +320,6 @@ function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[],
 	ax_phase = phase_plot(fig, label, ω_idx, fdata, pul, pll)
 	pax = polar_plot(fig, label, ω_idx, fdata,neg_real_pts,rmax, θmin_deg, θmax_deg)
 	fig
-end
-
-function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
-    xs = Float64[]
-    idxs = Int[]
-    for i in 2:length(y)
-        y1, y2 = y[i-1], y[i]
-        if y1 == 0
-            push!(xs, x[i-1])
-            push!(idxs, i-1)
-        elseif y1 * y2 <= 0
-            α = abs(y1) / (abs(y1) + abs(y2) + 1e-14)
-            push!(xs, x[i-1] * (1 - α) + x[i] * α)
-            push!(idxs, i-1)
-        end
-    end
-    return xs, idxs
-end
-
-function unit_circle_crossings(h::Vector{ComplexF64}, ω_arr)
-    mags = abs.(h)
-    xs, ys, ωs = Float64[], Float64[], Float64[]
-    for i in 2:length(mags)
-        d1, d2 = mags[i-1] - 1, mags[i] - 1
-        if d1 == 0
-            push!(xs, real(h[i-1]))
-            push!(ys, imag(h[i-1]))
-            push!(ωs, ω_arr[i-1])
-        elseif d1 * d2 <= 0
-            α = abs(d1) / (abs(d1) + abs(d2) + 1e-14)
-            hc = h[i-1] * (1 - α) + h[i] * α
-            ωc = exp(log(ω_arr[i-1]) * (1-α) + log(ω_arr[i]) * α)
-            push!(xs, real(hc))
-            push!(ys, imag(hc))
-            push!(ωs, ωc)
-        end
-    end
-    return xs, ys, ωs
-end
-
-function section4_nyquist_figure(G::RationalTF, K; cx=0.0, cy=0.0, llx=-1.5, lly=-1.5, urx=1.5, ury=1.5)
-    hpos = K .* eval_tf.(Ref(G), im .* ω_range)
-    hneg = K .* eval_tf.(Ref(G), -im .* ω_range)
-
-    xlims = (cx + min(llx, urx), cx + max(llx, urx))
-    ylims = (cy + min(lly, ury), cy + max(lly, ury))
-
-    fig = Figure(size=(980, 760))
-    ax = Axis(fig[1, 1],
-        xlabel="Re[K G₄(jω)]",
-        ylabel="Im[K G₄(jω)]",
-        title="Nyquist (Cartesian) — K = $(round(K, digits=2))",
-        aspect=DataAspect())
-
-    lines!(ax, real.(hpos), imag.(hpos), color=:steelblue, linewidth=2)
-    lines!(ax, real.(hneg), imag.(hneg), color=:steelblue, linewidth=1.6, linestyle=:dash)
-
-    θ = range(0, 2π, length=400)
-    lines!(ax, cos.(θ), sin.(θ), color=:gray40, linestyle=:dot, linewidth=1.8)
-
-    hlines!(ax, [0.0], color=:black, linestyle=:dot)
-    vlines!(ax, [0.0], color=:black, linestyle=:dot)
-    scatter!(ax, [-1.0], [0.0], color=:black, marker=:diamond, markersize=11)
-
-    x_real, _ = zero_crossings_xy(real.(hpos), imag.(hpos))
-    if !isempty(x_real)
-        scatter!(ax, x_real, zeros(length(x_real)), color=:purple, marker=:star5, markersize=15)
-    end
-
-    xu, yu, ωu = unit_circle_crossings(hpos, ω_range)
-    if !isempty(xu)
-        scatter!(ax, xu, yu, color=:darkorange, marker=:xcross, markersize=14, linewidth=2)
-    end
-
-    rect = Rect2f(xlims[1], ylims[1], xlims[2] - xlims[1], ylims[2] - ylims[1])
-    poly!(ax, rect, color=(:orange, 0.06), strokecolor=:darkorange, strokewidth=2)
-    scatter!(ax, [cx], [cy], color=:red, marker=:circle, markersize=11)
-
-    xlims!(ax, xlims)
-    ylims!(ax, ylims)
-
-    details = "Real-axis crossings: $(length(x_real)); unit-circle crossings: $(length(xu))"
-    Label(fig[2, 1], details, tellwidth=false, halign=:left)
-    fig
 end
 
 # ╔═╡ 98abf2c4-17ef-428e-b4f6-53347e349999
@@ -362,6 +334,38 @@ section_figure(G2, "G₂(s)", ω_idx2;
 section_figure(G3, "G₃(s)", ω_idx3;
     neg_real_pts=[(1/sqrt(2), 2/3, "K=3/2"), (0.0, 1/2, "K=2")],
     rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3, pul=220,pll=180)
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001001
+md"""
+## Section 4 — $G_4(s)=\frac{40}{s^3+6s^2+11s+6}$
+
+This section emphasizes **Gain/Phase Margin interpretation from Nyquist geometry**.  
+Use the gain slider to scale $K G_4(j\omega)$, and use the rectangle controls to pan/zoom the Cartesian Nyquist view.
+"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001002
+md"""Gain slider: $(@bind K4 PlutoUI.Slider(0.05:0.01:5.0, default=1.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001003
+md"""Rectangle center x: $(@bind cx4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001004
+md"""Rectangle center y: $(@bind cy4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001005
+md"""Rectangle lower-left x (relative): $(@bind llx4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001006
+md"""Rectangle lower-left y (relative): $(@bind lly4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001007
+md"""Rectangle upper-right x (relative): $(@bind urx4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001008
+md"""Rectangle upper-right y (relative): $(@bind ury4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
+G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
 
 # ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001010
 section4_nyquist_figure(G4, K4; cx=cx4, cy=cy4, llx=llx4, lly=lly4, urx=urx4, ury=ury4)
@@ -2001,7 +2005,10 @@ version = "4.1.0+0"
 # ╔═╡ Cell order:
 # ╠═63f6d141-e3e3-4b2f-b197-201cfd481111
 # ╟─088fcb9e-b1ec-4ec8-b4bd-b5d9e3ec2222
-# ╟─82b5ea57-f7d6-4609-8ca1-b7e1ef8b3333
+# ╠═513d6eee-b6ec-4431-99da-c7cff27f5775
+# ╠═9493cd83-dc8e-429c-97fc-219b1307580b
+# ╠═fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
+# ╠═add032b1-ee73-4471-81c4-f0eec56690fa
 # ╟─dd42c06f-9f52-47a1-91ae-1f54f32f7269
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
@@ -2030,5 +2037,15 @@ version = "4.1.0+0"
 # ╟─141140a6-48f9-422d-8e68-dd781ea634a0
 # ╟─444637e7-826d-442f-b84f-1355071ececf
 # ╟─86b8cb9c-cfd3-49f0-af47-ec0f81286b09
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001001
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001002
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001003
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001004
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001005
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001006
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001007
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001008
+# ╠═22e2d2f7-1f6d-4b2c-a111-cc4477001009
+# ╠═22e2d2f7-1f6d-4b2c-a111-cc4477001010
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
