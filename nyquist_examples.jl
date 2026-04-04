@@ -34,46 +34,6 @@ This notebook computes frequency responses directly from polynomial coefficients
 Use the sliders in each section to move a marker and to zoom the polar view (radius + angle window).
 """
 
-# ╔═╡ 9493cd83-dc8e-429c-97fc-219b1307580b
-function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
-    xs = Float64[]
-    idxs = Int[]
-    for i in 2:length(y)
-        y1, y2 = y[i-1], y[i]
-        if y1 == 0
-            push!(xs, x[i-1])
-            push!(idxs, i-1)
-        elseif y1 * y2 <= 0
-            α = abs(y1) / (abs(y1) + abs(y2) + 1e-14)
-            push!(xs, x[i-1] * (1 - α) + x[i] * α)
-            push!(idxs, i-1)
-        end
-    end
-    return xs, idxs
-end
-
-# ╔═╡ fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
-function unit_circle_crossings(h::Vector{ComplexF64}, ω_arr)
-    mags = abs.(h)
-    xs, ys, ωs = Float64[], Float64[], Float64[]
-    for i in 2:length(mags)
-        d1, d2 = mags[i-1] - 1, mags[i] - 1
-        if d1 == 0
-            push!(xs, real(h[i-1]))
-            push!(ys, imag(h[i-1]))
-            push!(ωs, ω_arr[i-1])
-        elseif d1 * d2 <= 0
-            α = abs(d1) / (abs(d1) + abs(d2) + 1e-14)
-            hc = h[i-1] * (1 - α) + h[i] * α
-            ωc = exp(log(ω_arr[i-1]) * (1-α) + log(ω_arr[i]) * α)
-            push!(xs, real(hc))
-            push!(ys, imag(hc))
-            push!(ωs, ωc)
-        end
-    end
-    return xs, ys, ωs
-end
-
 # ╔═╡ dd42c06f-9f52-47a1-91ae-1f54f32f7269
 md"""In the below we asssume $G_i(s)$ is the open-loop transfer function and it is connected in standard (negative) unity feedback configuration with scalar gain $K$. """
 
@@ -144,53 +104,6 @@ md"""Bode slider: $(@bind ω_idx3 PlutoUI.Slider(1:length(ω_range), default=300
 
 # ╔═╡ 33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
   eval_tf(G::RationalTF, s) = polyval_desc(G.num, s) / polyval_desc(G.den, s)
-
-# ╔═╡ add032b1-ee73-4471-81c4-f0eec56690fa
-function section4_nyquist_figure(G::RationalTF, K; cx=0.0, cy=0.0, llx=-1.5, lly=-1.5, urx=1.5, ury=1.5)
-    hpos = K .* eval_tf.(Ref(G), im .* ω_range)
-    hneg = K .* eval_tf.(Ref(G), -im .* ω_range)
-
-    xlims = (cx + min(llx, urx), cx + max(llx, urx))
-    ylims = (cy + min(lly, ury), cy + max(lly, ury))
-
-    fig = Figure(size=(980, 760))
-    ax = Axis(fig[1, 1],
-        xlabel="Re[K G₄(jω)]",
-        ylabel="Im[K G₄(jω)]",
-        title="Nyquist (Cartesian) — K = $(round(K, digits=2))",
-        aspect=DataAspect())
-
-    lines!(ax, real.(hpos), imag.(hpos), color=:steelblue; linewidth=2)
-    lines!(ax, real.(hneg), imag.(hneg), color=:steelblue; linewidth=1.6, linestyle=:dash)
-
-    θ = range(0, 2π, length=400)
-    lines!(ax, cos.(θ), sin.(θ), color=:gray40, linestyle=:dot, linewidth=1.8)
-
-    hlines!(ax, [0.0], color=:black, linestyle=:dot)
-    vlines!(ax, [0.0], color=:black, linestyle=:dot)
-    scatter!(ax, [-1.0], [0.0], color=:black, marker=:diamond, markersize=11)
-
-    x_real, _ = zero_crossings_xy(real.(hpos), imag.(hpos))
-    if !isempty(x_real)
-        scatter!(ax, x_real, zeros(length(x_real)), color=:purple, marker=:star5, markersize=15)
-    end
-
-    xu, yu, ωu = unit_circle_crossings(hpos, ω_range)
-    if !isempty(xu)
-        scatter!(ax, xu, yu, color=:darkorange, marker=:xcross, markersize=14)
-    end
-
-    rect = Rect2f(xlims[1], ylims[1], xlims[2] - xlims[1], ylims[2] - ylims[1])
-    poly!(ax, rect, color=(:orange, 0.06), strokecolor=:darkorange, strokewidth=2)
-    scatter!(ax, [cx], [cy], color=:red, marker=:circle, markersize=11)
-
-    xlims!(ax, xlims)
-    ylims!(ax, ylims)
-
-    details = "Real-axis crossings: $(length(x_real)); unit-circle crossings: $(length(xu))"
-    Label(fig[2, 1], details, tellwidth=false, halign=:left)
-    fig
-end
 
 # ╔═╡ 526d3412-6b3d-4475-a387-49183bc5aeb6
     function unwrap_phase(phase::Vector{Float64})
@@ -310,6 +223,35 @@ function polar_plot(fig,label, ω_idx, fdata, neg_real_pts, rmax, θmin_deg, θm
 	return pax
 end
 
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001001
+md"""
+## Section 4 — $G_4(s)=\frac{40}{s^3+6s^2+11s+6}$
+
+This section emphasizes **Gain/Phase Margin interpretation from Nyquist geometry**.  
+Use the gain slider to scale $K G_4(j\omega)$, and use the rectangle controls to pan/zoom the Cartesian Nyquist view.
+"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001002
+md"""Gain slider: $(@bind K4 PlutoUI.Slider(0.05:0.01:5.0, default=1.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001003
+md"""Rectangle center x: $(@bind cx4 PlutoUI.Slider(-3.0:0.05:3.0, default=2.5, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001004
+md"""Rectangle center y: $(@bind cy4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001005
+md"""Rectangle lower-left: $(@bind ll PlutoUI.Slider(-6.0:0.05:-0.05, default=-6, show_value=true))"""
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001007
+md"""Rectangle upper-right: $(@bind ur PlutoUI.Slider(0.05:0.05:6.0, default=6, show_value=true))"""
+
+# ╔═╡ 51bbae7d-d08e-4882-bfdd-6858356efec2
+md"Unit circle: $(@bind ucbox CheckBox())"
+
+# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
+G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
+
 # ╔═╡ 513d6eee-b6ec-4431-99da-c7cff27f5775
 function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], 
 						rmax=1.0, θmin_deg=-210, θmax_deg=210, pul=0, pll=-180)
@@ -335,40 +277,97 @@ section_figure(G3, "G₃(s)", ω_idx3;
     neg_real_pts=[(1/sqrt(2), 2/3, "K=3/2"), (0.0, 1/2, "K=2")],
     rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3, pul=220,pll=180)
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001001
-md"""
-## Section 4 — $G_4(s)=\frac{40}{s^3+6s^2+11s+6}$
+# ╔═╡ 9493cd83-dc8e-429c-97fc-219b1307580b
+function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
+    xs = Float64[]
+    idxs = Int[]
+    for i in 2:length(y)
+        y1, y2 = y[i-1], y[i]
+        if y1 == 0
+            push!(xs, x[i-1])
+            push!(idxs, i-1)
+        elseif y1 * y2 <= 0
+            α = abs(y1) / (abs(y1) + abs(y2) + 1e-14)
+            push!(xs, x[i-1] * (1 - α) + x[i] * α)
+            push!(idxs, i-1)
+        end
+    end
+    return xs, idxs
+end
 
-This section emphasizes **Gain/Phase Margin interpretation from Nyquist geometry**.  
-Use the gain slider to scale $K G_4(j\omega)$, and use the rectangle controls to pan/zoom the Cartesian Nyquist view.
-"""
+# ╔═╡ fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
+function unit_circle_crossings(h::Vector{ComplexF64}, ω_arr)
+    mags = abs.(h)
+    xs, ys, ωs = Float64[], Float64[], Float64[]
+    for i in 2:length(mags)
+        d1, d2 = mags[i-1] - 1, mags[i] - 1
+        if d1 == 0
+            push!(xs, real(h[i-1]))
+            push!(ys, imag(h[i-1]))
+            push!(ωs, ω_arr[i-1])
+        elseif d1 * d2 <= 0
+            α = abs(d1) / (abs(d1) + abs(d2) + 1e-14)
+            hc = h[i-1] * (1 - α) + h[i] * α
+            ωc = exp(log(ω_arr[i-1]) * (1-α) + log(ω_arr[i]) * α)
+            push!(xs, real(hc))
+            push!(ys, imag(hc))
+            push!(ωs, ωc)
+        end
+    end
+    return xs, ys, ωs
+end
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001002
-md"""Gain slider: $(@bind K4 PlutoUI.Slider(0.05:0.01:5.0, default=1.0, show_value=true))"""
+# ╔═╡ add032b1-ee73-4471-81c4-f0eec56690fa
+function section4_nyquist_figure(G::RationalTF, K; cx=0.0, cy=0.0, ll=1.5, ur, uc=true)
+    hpos = K .* eval_tf.(Ref(G), im .* ω_range)
+    hneg = K .* eval_tf.(Ref(G), -im .* ω_range)
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001003
-md"""Rectangle center x: $(@bind cx4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+    xlims = (cx + min(ll, ur), cx + max(ll, ur))
+    ylims = (cy + min(ll, ur), cy + max(ll, ur))
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001004
-md"""Rectangle center y: $(@bind cy4 PlutoUI.Slider(-3.0:0.05:3.0, default=0.0, show_value=true))"""
+    fig = Figure(size=(980, 760))
+    ax = Axis(fig[1, 1],
+        xlabel="Re[K G₄(jω)]",
+        ylabel="Im[K G₄(jω)]",
+        title="Nyquist (Cartesian) — K = $(round(K, digits=2))", titlesize=20,
+        aspect=DataAspect(),)
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001005
-md"""Rectangle lower-left x (relative): $(@bind llx4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+    lines!(ax, real.(hpos), imag.(hpos), color=:steelblue; linewidth=2)
+    lines!(ax, real.(hneg), imag.(hneg), color=:steelblue; linewidth=1.6, linestyle=:dot)
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001006
-md"""Rectangle lower-left y (relative): $(@bind lly4 PlutoUI.Slider(-4.0:0.05:-0.05, default=-1.5, show_value=true))"""
+    θ = range(0, 2π, length=400)
+	if uc
+    lines!(ax, cos.(θ), sin.(θ), color=:gray40, linestyle=:dot, linewidth=1.8)
+	end
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001007
-md"""Rectangle upper-right x (relative): $(@bind urx4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+    hlines!(ax, [0.0], color=:black, linestyle=:dot)
+    vlines!(ax, [0.0], color=:black, linestyle=:dot)
+    scatter!(ax, [-1.0], [0.0], color=:black, marker=:diamond, markersize=16)
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001008
-md"""Rectangle upper-right y (relative): $(@bind ury4 PlutoUI.Slider(0.05:0.05:4.0, default=1.5, show_value=true))"""
+    x_real, _ = zero_crossings_xy(real.(hpos), imag.(hpos))
+    if !isempty(x_real)
+        scatter!(ax, x_real, zeros(length(x_real)), color=:purple, marker=:star5, markersize=15)
+    end
 
-# ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
-G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
+    xu, yu, ωu = unit_circle_crossings(hpos, ω_range)
+    if !isempty(xu)
+        scatter!(ax, xu, yu, color=:darkorange, marker=:xcross, markersize=14)
+    end
+
+    rect = Rect2f(xlims[1], ylims[1], xlims[2] - xlims[1], ylims[2] - ylims[1])
+    # poly!(ax, rect, color=(:orange, 0.06), strokecolor=:darkorange, strokewidth=2)
+    # scatter!(ax, [cx], [cy], color=:red, marker=:circle, markersize=11)
+
+    xlims!(ax, xlims)
+    ylims!(ax, ylims)
+
+    details = "Real-axis crossings: $(length(x_real)); unit-circle crossings: $(length(xu))"
+    Label(fig[2, 1], details, tellwidth=false, halign=:left)
+    fig
+end
 
 # ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001010
-section4_nyquist_figure(G4, K4; cx=cx4, cy=cy4, llx=llx4, lly=lly4, urx=urx4, ury=ury4)
+section4_nyquist_figure(G4, K4; cx=cx4, cy=cy4, ll, ur, uc=ucbox)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2005,10 +2004,6 @@ version = "4.1.0+0"
 # ╔═╡ Cell order:
 # ╠═63f6d141-e3e3-4b2f-b197-201cfd481111
 # ╟─088fcb9e-b1ec-4ec8-b4bd-b5d9e3ec2222
-# ╠═513d6eee-b6ec-4431-99da-c7cff27f5775
-# ╠═9493cd83-dc8e-429c-97fc-219b1307580b
-# ╠═fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
-# ╠═add032b1-ee73-4471-81c4-f0eec56690fa
 # ╟─dd42c06f-9f52-47a1-91ae-1f54f32f7269
 # ╟─56f5984f-c0d6-4dd2-83c8-a77f877d4444
 # ╟─71f042f8-f79e-4707-9275-01f1ba7f5555
@@ -2042,10 +2037,13 @@ version = "4.1.0+0"
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001003
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001004
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001005
-# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001006
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001007
-# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001008
-# ╠═22e2d2f7-1f6d-4b2c-a111-cc4477001009
-# ╠═22e2d2f7-1f6d-4b2c-a111-cc4477001010
+# ╟─51bbae7d-d08e-4882-bfdd-6858356efec2
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001009
+# ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001010
+# ╟─513d6eee-b6ec-4431-99da-c7cff27f5775
+# ╟─9493cd83-dc8e-429c-97fc-219b1307580b
+# ╟─fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
+# ╟─add032b1-ee73-4471-81c4-f0eec56690fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
