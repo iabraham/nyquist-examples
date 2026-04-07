@@ -252,6 +252,50 @@ md"Unit circle: $(@bind ucbox CheckBox())"
 # ╔═╡ 22e2d2f7-1f6d-4b2c-a111-cc4477001009
 G4 = RationalTF([40.0], [1.0, 6.0, 11.0, 6.0])
 
+# ╔═╡ 73587493-ac5b-495e-ae46-6cf956016cb9
+md""" #### Gain Margin
+
+The **gain margin** is how much we can multiply the gain $K$ before the point -1 is encircled by the Nyquist plot. Or equivalently, 
+
+```math
+GM = 1/M_{180^\circ}
+```
+
+where $M_{180^\circ}$ is the magnitude when phase is $-180^{\circ}$.
+
+
+In the above, verify $K=3/2$ causes the system to be marginally stable. Then note that at $K=1$, the Nyquist plot crosses real axis at $-2/3$!. 
+
+"""
+
+# ╔═╡ c0f822fe-c8ce-4e8f-8c48-74bec824e802
+md""" #### Phase margin
+
+The **phase margin** is the difference of the phase, from $-180^\circ$ of that point on the Nyquist plot that is exactly magnitude 1 away from the origin. In other words, if we were to solve analytically, we would do the following:
+
+ 1. Find $\omega$ for which $|G(j\omega)|=1$. Call it $\omega_{M=1}$. 
+ 1. Evaluate difference between $\angle \omega_{M=1}$ and $-180^\circ$. 
+
+Visually, this can be accomplished on the **above** plot by noting the intersection of the Nyquist plot with the unit circle and calculating the phase of that point with respect to the negative real axis. 
+
+In the below we do this exactly by linking the Bode & Nyquist plot. 
+
+ 1. Move the Bode slider until the green dot on the Nyquist plot is on a circle of radius 1. 
+ 1. Verify the Bode magnitude plot reads approximately 1. 
+ 1. Read of the Phase of that point from the Bode phase plot. 
+ 1. Find difference from $-180^{\circ}$.
+"""
+
+# ╔═╡ 431f2a4f-27c7-456c-ac54-fa8cfabac02e
+md"""Bode slider: $(@bind ω_idx4 PlutoUI.Slider(1:length(ω_range), default=300, show_value=false))"""
+
+# ╔═╡ 5624c122-6f8d-4c04-8987-db9b7139234f
+md"""Radius slider: $(@bind rmax4 PlutoUI.Slider(0.2:0.01:6.0, default=3.0, show_value=true))"""
+
+# ╔═╡ 5f9106be-44fb-4b15-99b6-f2fbf015250a
+md"""Theta slider: $(@bind θzoom4 PlutoUI.Slider(40:5:180, default=180, show_value=true))"""
+
+
 # ╔═╡ 513d6eee-b6ec-4431-99da-c7cff27f5775
 function section_figure(G::RationalTF, label, ω_idx; neg_real_pts=[], 
 						rmax=1.0, θmin_deg=-210, θmax_deg=210, pul=0, pll=-180)
@@ -276,6 +320,11 @@ section_figure(G2, "G₂(s)", ω_idx2;
 section_figure(G3, "G₃(s)", ω_idx3;
     neg_real_pts=[(1/sqrt(2), 2/3, "K=3/2"), (0.0, 1/2, "K=2")],
     rmax=rmax3, θmin_deg=-θzoom3, θmax_deg=θzoom3, pul=220,pll=180)
+
+# ╔═╡ 2d5faf95-ed64-4258-8565-f50423a41746
+section_figure(G4, "G_4(s)", ω_idx4;
+    neg_real_pts=[(1/sqrt(2), -2/3, "K=1"), (0.0, 40/6, "K=1")],
+    rmax=rmax4, θmin_deg=-θzoom4, θmax_deg=θzoom4, pul=30,pll=-300)
 
 # ╔═╡ 9493cd83-dc8e-429c-97fc-219b1307580b
 function zero_crossings_xy(x::Vector{Float64}, y::Vector{Float64})
@@ -2023,8 +2072,6 @@ version = "4.1.0+0"
 # ╟─1a768a4e-f2c7-4ec6-8a39-37e86b610004
 # ╟─ef48c0f6-49b9-46cb-ac53-12fcfd520005
 # ╟─0c0805e3-62a5-4858-bab3-69a248090006
-# ╠═d05b9de4-d377-49ab-938f-b6ef85acb049
-# ╠═c8868669-0362-47bc-b35e-fd338bae727e
 # ╟─33f7c805-5ad8-4f8c-9dc7-a4f7e1a5f3d4
 # ╟─0ffd1b36-4e0a-4d0a-8147-538c2f198e8f
 # ╟─526d3412-6b3d-4475-a387-49183bc5aeb6
@@ -2032,6 +2079,8 @@ version = "4.1.0+0"
 # ╟─141140a6-48f9-422d-8e68-dd781ea634a0
 # ╟─444637e7-826d-442f-b84f-1355071ececf
 # ╟─86b8cb9c-cfd3-49f0-af47-ec0f81286b09
+# ╟─d05b9de4-d377-49ab-938f-b6ef85acb049
+# ╟─c8868669-0362-47bc-b35e-fd338bae727e
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001001
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001002
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001003
@@ -2041,6 +2090,12 @@ version = "4.1.0+0"
 # ╟─51bbae7d-d08e-4882-bfdd-6858356efec2
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001009
 # ╟─22e2d2f7-1f6d-4b2c-a111-cc4477001010
+# ╟─73587493-ac5b-495e-ae46-6cf956016cb9
+# ╟─c0f822fe-c8ce-4e8f-8c48-74bec824e802
+# ╟─431f2a4f-27c7-456c-ac54-fa8cfabac02e
+# ╟─5624c122-6f8d-4c04-8987-db9b7139234f
+# ╟─5f9106be-44fb-4b15-99b6-f2fbf015250a
+# ╟─2d5faf95-ed64-4258-8565-f50423a41746
 # ╟─513d6eee-b6ec-4431-99da-c7cff27f5775
 # ╟─9493cd83-dc8e-429c-97fc-219b1307580b
 # ╟─fd0363a6-1fe6-41d8-b927-1c5eb3e8a00c
